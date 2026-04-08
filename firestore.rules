@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: games
+    // ... (existing)
+    //
+    // Collection: users
+    // Document ID: user UID
+    // Fields:
+    //   - uid: string (required, matches auth.uid)
+    //   - displayName: string (required, 1-100 chars)
+    //   - email: string (required, valid email)
+    //   - lastLogin: timestamp (optional)
+    //   - settings: map (optional)
+    //   - role: string (required, 'user' or 'admin')
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "keo484152@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*") || url.matches("^data:.*"));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidGame(data) {
+      return data.keys().hasAll(['id', 'title', 'developer', 'script', 'authorUid', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.developer is string &&
+             data.script is string && data.script.size() < 1048576 &&
+             data.authorUid == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role']) &&
+             data.uid == request.auth.uid &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['user', 'admin'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /games/{gameId} {
+      allow read: if true; // Everyone can see games
+      allow create: if isAuthenticated() && isValidGame(request.resource.data);
+      allow update: if (isOwner(resource.data.authorUid) || isAdmin()) && isValidGame(request.resource.data);
+      allow delete: if isOwner(resource.data.authorUid) || isAdmin();
+    }
+
+    match /users/{userId} {
+      // Users can only read their own profile, unless they are admin
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can only create their own profile with 'user' role
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      
+      // Users can only update their own profile, and cannot change their role unless they are admin
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+      
+      allow delete: if isAdmin();
+    }
+
+    match /memoryMaps/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+  }
+}

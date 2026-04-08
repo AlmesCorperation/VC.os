@@ -1,0 +1,7 @@
+{
+  "name": "VC.os",
+  "description": "A bare-bones OS, and a friendly virtual assistant named VC.ai. Created by Keo Doolish.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

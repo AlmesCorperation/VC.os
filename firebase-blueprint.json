@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "Game": {
+      "title": "Game",
+      "description": "A game published by a user in the OS.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the game." },
+        "title": { "type": "string", "description": "Title of the game." },
+        "developer": { "type": "string", "description": "Developer name or UID." },
+        "description": { "type": "string", "description": "Brief description of the game." },
+        "category": { "type": "string", "description": "Category of the game." },
+        "version": { "type": "string", "description": "Version of the game." },
+        "script": { "type": "string", "description": "The N language source code." },
+        "trailerUrl": { "type": "string", "description": "URL to the trailer image or video." },
+        "iconColor": { "type": "string", "description": "CSS color for the game icon." },
+        "isMultiplayer": { "type": "boolean", "description": "Whether the game supports multiplayer." },
+        "rating": { "type": "number", "description": "Average rating of the game." },
+        "authorUid": { "type": "string", "description": "UID of the user who published the game." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the game was published." }
+      },
+      "required": ["id", "title", "developer", "script", "authorUid", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique identifier for the user." },
+        "displayName": { "type": "string", "description": "User's display name." },
+        "email": { "type": "string", "description": "User's email address." },
+        "lastLogin": { "type": "string", "format": "date-time", "description": "When the user last logged in." },
+        "settings": { "type": "object", "description": "User settings." },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "User's role." }
+      },
+      "required": ["uid", "displayName", "email", "role"]
+    },
+    "MemoryMap": {
+      "title": "MemoryMap",
+      "description": "Bitmap tracking 4KB pages of simulated RAM.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner of the memory map." },
+        "totalRam": { "type": "number", "description": "Total simulated RAM in bytes." },
+        "pageSize": { "type": "number", "description": "Size of each page in bytes (4096)." },
+        "bitmap": { "type": "string", "description": "Base64 encoded bitmap string." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last sync time." }
+      },
+      "required": ["uid", "totalRam", "pageSize", "bitmap"]
+    }
+  },
+  "firestore": {
+    "/games/{gameId}": {
+      "schema": "Game",
+      "description": "Collection of published games."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and settings."
+    },
+    "/memoryMaps/{userId}": {
+      "schema": "MemoryMap",
+      "description": "Simulated RAM bitmaps for users."
+    }
+  }
+}
